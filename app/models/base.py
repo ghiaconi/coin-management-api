@@ -1,14 +1,13 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.ext.declarative import DeclarativeMeta, declarative_base
-from sqlalchemy.orm import DeclarativeBase
+
+db = SQLAlchemy()
 
 
-class Base(SQLAlchemy):
-    def make_declarative_base(self, metadata=None):
-        base = declarative_base(cls=DeclarativeBase, name='Model',
-                                metadata=metadata, metaclass=DeclarativeMeta)
-        base.query = self.session.query_property()
-        return base
+class Base(db.Model):
+    __abstract__ = True
 
+    id = db.Column(db.Integer, primary_key=True)
 
-db = Base()
+    def save(self):
+        db.session.add(self)
+        db.session.commit()

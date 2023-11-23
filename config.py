@@ -8,7 +8,7 @@ class Config:
     # Fetch MySQL connection details from environment variables, otherwise use the defaults
     DB_USER = os.environ.get('DB_USER', 'app')
     DB_PASSWORD = os.environ.get('DB_PASSWORD', 'app')
-    DB_HOST = os.environ.get('DB_HOST', '127.0.0.1')
+    DB_HOST = os.environ.get('DB_HOST', 'localhost')
     DB_PORT = os.environ.get('DB_PORT', '3306')
     DB_NAME = os.environ.get('DB_NAME', 'coin_management_api_development')
 

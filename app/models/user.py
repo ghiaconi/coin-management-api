@@ -1,6 +1,6 @@
-from .base import db
+from .base import db, Base
 
 
-class User(db.Model):
-    # Your User model definition
-    pass
+class User(Base):
+    username = db.Column(db.String(255), unique=True, nullable=False)
+    email = db.Column(db.String(255))

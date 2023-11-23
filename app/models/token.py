@@ -1,6 +1,5 @@
-from .base import db
+from .base import db, Base
 
 
-class Token(db.Model):
-    # Your User model definition
-    pass
+class Token(Base):
+    key = db.Column(db.String(64), unique=True, nullable=False)
