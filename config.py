@@ -11,6 +11,7 @@ class Config:
     DB_HOST = os.environ.get('DB_HOST', 'localhost')
     DB_PORT = os.environ.get('DB_PORT', '3306')
     DB_NAME = os.environ.get('DB_NAME', 'coin_management_api_development')
+    RESTX_ERROR_404_HELP = os.environ.get('RESTX_ERROR_404_HELP', False)
 
     # Construct the MySQL connection string
     SQLALCHEMY_DATABASE_URI = f"mysql+mysqlconnector://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
