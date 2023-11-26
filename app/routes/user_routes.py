@@ -1,8 +1,11 @@
 from flask_restx import Namespace, Resource, reqparse, fields, inputs
 from app.models.user import db, User as UserModel
 from sqlalchemy.exc import IntegrityError
+from app.services.user_service import (UserService, TokenNotFoundError, UserNotFoundError, TokenAlreadyAssignedError,
+                                       TokenNotAssignedError)
 
 ns = Namespace('users', description='User related operations')
+user_service = UserService()
 
 # User validation parser
 user_parser = reqparse.RequestParser()
@@ -10,9 +13,8 @@ user_parser.add_argument('username', type=str, help='User username')
 user_parser.add_argument('email', type=str, help='User email')
 user_parser.add_argument('password', type=str, help='User password')
 
-# Custom fields validation parser
-ns_parser = reqparse.RequestParser()
-ns_parser.add_argument('include_tokens', type=inputs.boolean, required=True, help='The username of the user')
+token_id_parser = reqparse.RequestParser()
+token_id_parser.add_argument('token_id', type=str, required=True, help='The username of the user')
 
 # Swagger documentation for the User model
 user_model = ns.model('User', {
@@ -95,6 +97,9 @@ class User(Resource):
     @ns.doc(description='Get user details by username',
             params={'include_tokens': {'description': 'Include monitored tokens', 'type': 'boolean', 'default': False}})
     def get(self, username):
+        ns_parser = reqparse.RequestParser()
+        ns_parser.add_argument('include_tokens', type=inputs.boolean, required=True, help='The token id')
+
         args = ns_parser.parse_args()
         include_tokens = args.get('include_tokens', False)
         try:
@@ -106,3 +111,41 @@ class User(Resource):
             return {'message': f'User details for {username}', 'data': user_data}, 200
         except Exception as e:
             return {'message': f'Error retrieving user details for {username}', 'error': str(e)}, 500
+
+
+@ns.route('/<username>/tokens/add')
+class AssignToken(Resource):
+    @ns.doc(description='Add token to the monitored tokens list for user',
+            params={'token_id': {'description': 'Id of the token to add to the monitored list', 'type': 'string',
+                                 'required': True}})
+    def post(self, username):
+        args = token_id_parser.parse_args()
+        token_id = args['token_id']
+
+        try:
+            if user_service.is_token_assigned_to_user(username, token_id):
+                return {'message': f'Token {token_id} is already monitored by user {username}'}, 409
+
+            user_service.assign_token_to_user(username, token_id)
+            return {'message': f'Token {token_id} successfully added to users {username}\'s list'}, 200
+
+        except (TokenNotFoundError, UserNotFoundError, TokenAlreadyAssignedError) as e:
+            return {'message': str(e)}, 404
+        except TokenAlreadyAssignedError as e:
+            return {'message': str(e)}, 409
+
+
+@ns.route('/<username>/tokens/remove')
+class AssignToken(Resource):
+    @ns.doc(description='Remove token from the monitored tokens list for user',
+            params={'token_id': {'description': 'Monitored token id to remove', 'type': 'string', 'required': True}})
+    def delete(self, username):
+        args = token_id_parser.parse_args()
+        token_id = args['token_id']
+
+        try:
+            user_service.remove_token_from_user(username, token_id)
+            return {'message': f'Token {token_id} successfully removed from {username}\'s monitor list'}, 200
+
+        except (TokenNotFoundError, UserNotFoundError, TokenNotAssignedError) as e:
+            return {'message': str(e)}, 404

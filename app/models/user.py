@@ -17,7 +17,11 @@ class User(Base):
             'email': self.email,
         }
         if include_tokens:
-            serialized_data['tokens'] = [token.serialize() for token in self.tokens]
+            tokens_data = [token.serialize() for token in self.tokens]
+            serialized_data['tokens'] = {
+                'total_records': len(tokens_data),
+                'data': tokens_data
+            }
         return serialized_data
 
     def __repr__(self):
