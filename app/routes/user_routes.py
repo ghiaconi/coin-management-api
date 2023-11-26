@@ -1,13 +1,20 @@
 from flask_restx import Namespace, Resource, reqparse, fields, inputs
+from app.models.user import db, User as UserModel
+from sqlalchemy.exc import IntegrityError
 
 ns = Namespace('users', description='User related operations')
 
+# User validation parser
 user_parser = reqparse.RequestParser()
 user_parser.add_argument('username', type=str, help='User username')
 user_parser.add_argument('email', type=str, help='User email')
 user_parser.add_argument('password', type=str, help='User password')
-#user_parser.add_argument('include_tokens', type=inputs.boolean, location='args', default=False)
 
+# Custom fields validation parser
+ns_parser = reqparse.RequestParser()
+ns_parser.add_argument('include_tokens', type=inputs.boolean, required=True, help='The username of the user')
+
+# Swagger documentation for the User model
 user_model = ns.model('User', {
     'username': fields.String(description='username'),
     'email': fields.String(description='User email'),
@@ -19,43 +26,83 @@ user_model = ns.model('User', {
 class Users(Resource):
     @ns.doc(description='Retrieve all registered users')
     def get(self):
-        return {'message': 'You get all users'}
+        try:
+            users = UserModel.query.all()
+            serialized_users = [user.serialize() for user in users]
+            return {'users': serialized_users}, 200
+        except Exception as e:
+            return {'message': 'Error getting users', 'error': str(e)}, 500
 
     @ns.doc(description='Register a new user')
     @ns.expect(user_model, validate=True, validate_payload=True)
     def post(self):
         user_data = user_parser.parse_args()
-        # Add registration logic here
-        return {'message': f'{user_data}'}
+        try:
+            # Create a new user and add it to the database
+            new_user = UserModel(**user_data)
+            db.session.add(new_user)
+            db.session.commit()
+
+            return {'message': f'User {new_user.username} registered successfully'}, 201
+        except IntegrityError as e:
+            db.session.rollback()
+            return {'message': 'Error registering user', 'error': str(e)}, 400
+        except Exception as e:
+            db.session.rollback()
+            return {'message': 'Error registering user', 'error': str(e)}, 500
 
 
 @ns.route('/<username>')
 class User(Resource):
-    @ns.doc(description='Update user details by username')
+    @ns.doc(description='Update user details')
     @ns.expect(user_model, validate=True, validate_payload=True)
     def put(self, username):
         args = user_parser.parse_args()
 
-        # Add logic to update user details by user_id using args['name'], args['email'], etc.
-        # Update the user with the provided data
+        try:
+            user = UserModel.query.filter_by(username=username).first()
+            if not user:
+                return {'message': f'User {username} not found'}, 404
 
-        return {'message': f'User details updated for user {username}', 'data': args}
+            if 'username' in args and args['username'] is not None:
+                user.username = args['username']
+            if 'email' in args and args['email'] is not None:
+                user.email = args['email']
+            if 'password' in args and args['password'] is not None:
+                user.password = args['password']
+
+            db.session.commit()
+            return {'message': f'User details updated for user {username}'}, 200
+        except Exception as e:
+            db.session.rollback()
+            return {'message': f'Error updating user details for user {username}', 'error': str(e)}, 500
 
     @ns.doc(description='Delete user by username')
     def delete(self, username):
-        # Add logic to delete user by user_id
-        return {'message': f'User {username} deleted'}
+        try:
+            user = UserModel.query.filter_by(username=username).first()
+            if not user:
+                return {'message': f'User with username {username} not found'}, 404
 
-    @ns.doc(description='Get user details by username', params={'include_tokens': {'description': 'Include monitored tokens', 'type': 'boolean', 'default': False}})
+            db.session.delete(user)
+            db.session.commit()
+
+            return {'message': f'User {username} deleted'}, 200
+        except Exception as e:
+            db.session.rollback()
+            return {'message': f'Error deleting user {username}', 'error': str(e)}, 500
+
+    @ns.doc(description='Get user details by username',
+            params={'include_tokens': {'description': 'Include monitored tokens', 'type': 'boolean', 'default': False}})
     def get(self, username):
-        tokens = 'do not include monitored tokens'
-        user_parser.add_argument('include_tokens', type=inputs.boolean, location='args', default=False)
-        args = user_parser.parse_args()
+        args = ns_parser.parse_args()
         include_tokens = args.get('include_tokens', False)
+        try:
+            user = UserModel.query.filter_by(username=username).first()
+            if not user:
+                return {'message': f'User with username {args} not found'}, 404
 
-        if include_tokens:
-            # Add logic to retrieve user details by user_id and include monitored tokens
-            tokens = 'Include monitored tokens'
-
-        # Add logic to retrieve user details by user_id
-        return {'message': f'User {username} [{tokens}]'}
+            user_data = user.serialize(include_tokens=include_tokens)
+            return {'message': f'User details for {username}', 'data': user_data}, 200
+        except Exception as e:
+            return {'message': f'Error retrieving user details for {username}', 'error': str(e)}, 500

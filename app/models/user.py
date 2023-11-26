@@ -10,5 +10,15 @@ class User(Base):
     # Define the relationship to Token
     tokens = db.relationship('Token', secondary=user_token, backref='users')
 
+    def serialize(self, include_tokens=False):
+        serialized_data = {
+            'id': self.id,
+            'username': self.username,
+            'email': self.email,
+        }
+        if include_tokens:
+            serialized_data['tokens'] = [token.serialize() for token in self.tokens]
+        return serialized_data
+
     def __repr__(self):
         return f'<User {self.username}>'
