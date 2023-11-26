@@ -95,19 +95,22 @@ class User(Resource):
             return {'message': f'Error deleting user {username}', 'error': str(e)}, 500
 
     @ns.doc(description='Get user details by username',
-            params={'include_tokens': {'description': 'Include monitored tokens', 'type': 'boolean', 'default': False}})
+            params={'include_active_tokens': {'description': 'Include monitored tokens', 'type': 'boolean', 'default': False},
+                    'include_archived_tokens': {'description': 'Include tokens not monitored anymore', 'type': 'boolean', 'default': False}})
     def get(self, username):
-        ns_parser = reqparse.RequestParser()
-        ns_parser.add_argument('include_tokens', type=inputs.boolean, required=True, help='The token id')
+        tokens_parser = reqparse.RequestParser()
+        tokens_parser.add_argument('include_active_tokens', type=inputs.boolean)
+        tokens_parser.add_argument('include_archived_tokens', type=inputs.boolean)
 
-        args = ns_parser.parse_args()
-        include_tokens = args.get('include_tokens', False)
+        args = tokens_parser.parse_args()
+        active_flag = args.get('include_active_tokens', False)
+        archived_flag = args.get('include_archived_tokens', False)
         try:
             user = UserModel.query.filter_by(username=username).first()
             if not user:
                 return {'message': f'User with username {args} not found'}, 404
 
-            user_data = user.serialize(include_tokens=include_tokens)
+            user_data = user.serialize(include_active_tokens=active_flag, include_archived_tokens=archived_flag)
             return {'message': f'User details for {username}', 'data': user_data}, 200
         except Exception as e:
             return {'message': f'Error retrieving user details for {username}', 'error': str(e)}, 500

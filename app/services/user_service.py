@@ -19,8 +19,7 @@ class UserService:
         if token in user.tokens:
             raise TokenAlreadyAssignedError(f'Token {token_id} is already assigned to user {username}')
 
-        user.tokens.append(token)
-        db.session.commit()
+        user.assign_token(token)
 
     def is_token_assigned_to_user(self, username, token_id):
         user = User.query.filter_by(username=username).first()
@@ -43,8 +42,7 @@ class UserService:
         if token not in user.tokens:
             raise TokenNotAssignedError(f'Token {token_id} is not assigned to user {username}')
 
-        user.tokens.remove(token)
-        db.session.commit()
+        user.unlink_token(token)
 
 
 class UserNotFoundError(Exception):

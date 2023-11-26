@@ -10,7 +10,7 @@ These instructions will guide you through setting up the project on your local m
 
 - Python (version X.X.X)
 - Flask-SQLAlchemy
-- MySQL database
+- MySQL database 
 
 ### Run bare metal
 
@@ -34,16 +34,13 @@ Set at least the following environment variables:
 
 **Apply database migrations:**
 
-    ```bash
     flask db upgrade
-    ```
 
 ### Running the Application
 
 Run the following command to start the Flask development server:
 
-   ```bash
    flask run
-   ```
+
  ### Swagger Documentation
     Swagger documentation can be found at http://localhost:5000/docs
