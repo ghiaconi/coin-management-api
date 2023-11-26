@@ -20,13 +20,4 @@ def create_app(config_class=Config):
     from app.models.user import User
     from app.models.token import Token
 
-    @app.route('/test/', methods=['GET'])
-    def test_page():
-        last_user = User.query.order_by(User.id.desc()).first()
-        last_token = Token.query.order_by(Token.id.desc()).first()
-        return jsonify({'message': 'Hello World!',
-                        'user': str(vars(last_user)),
-                        'token': str(vars(last_token))
-                        })
-
     return app

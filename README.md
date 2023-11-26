@@ -16,9 +16,12 @@ These instructions will guide you through setting up the project on your local m
 
 **Install dependencies:**
 
-    ```bash
     pip install -r requirements.txt
-    ```
+
+Do not forget to sync your dependencies after installing new packages:
+
+    pip freeze > requirements.txt
+
 Set at least the following environment variables:
 
     - `FLASK_ENV`=development

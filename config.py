@@ -18,5 +18,7 @@ class Config:
 
     # Disable tracking modifications of objects and emit signals
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    # You can then use this configuration in your Flask app
-    # app.config.from_object(Config)
+
+    # CoinGecko API
+    COINGECKO_API_URL = 'https://api.coingecko.com/api/v3'
+    COINGECKO_API_REFRESH_INTERVAL = 60  # seconds. TODO Figure out a good interval for this
