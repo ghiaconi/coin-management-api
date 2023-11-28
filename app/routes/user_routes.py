@@ -39,6 +39,9 @@ class Users(Resource):
     @ns.expect(user_model, validate=True, validate_payload=True)
     def post(self):
         user_data = user_parser.parse_args()
+        existing_user = UserModel.query.filter_by(username=user_data['username']).first()
+        if existing_user:
+            return {'message': f'User {user_data["username"]} already exists'}, 403
         try:
             # Create a new user and add it to the database
             new_user = UserModel(**user_data)
@@ -108,7 +111,7 @@ class User(Resource):
         try:
             user = UserModel.query.filter_by(username=username).first()
             if not user:
-                return {'message': f'User with username {args} not found'}, 404
+                return {'message': f'User with username {username} not found'}, 404
 
             user_data = user.serialize(include_active_tokens=active_flag, include_archived_tokens=archived_flag)
             return {'message': f'User details for {username}', 'data': user_data}, 200

@@ -1,4 +1,5 @@
-from .base import db, Base, user_token
+from .base import db, Base, user_token, text
+from datetime import datetime
 
 
 class User(Base):
@@ -6,22 +7,37 @@ class User(Base):
     email = db.Column(db.String(120), unique=True, nullable=False)
     admin = db.Column(db.Boolean, default=False)  # TODO create admin only by verification(invitation only)
     password = db.Column(db.String(255), nullable=False)  # TODO add encryption
-    archived_tokens_refs = db.Column(db.JSON)
+    archived_tokens_refs = db.Column(db.JSON, default=[])  # TODO move to the join table
+    monitored_tokens_refs = db.Column(db.JSON, default=[])  # TODO move to the join table
     # Define the relationship to Token
     tokens = db.relationship('Token', secondary=user_token, backref='users')
 
     def assign_token(self, token):
-        if self.archived_tokens_refs is not None and token.key in self.archived_tokens_refs:
-            self.archived_tokens_refs.remove(token.key)
+        current_timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        patch = f'{{"{token.key}": "{current_timestamp}"}}'
+        remove_query = text(
+            f"UPDATE user SET archived_tokens_refs = JSON_REMOVE(archived_tokens_refs, '$.{token.key}') WHERE id = :user_id"
+        )
+        add_query = text(
+            f"UPDATE user SET monitored_tokens_refs = JSON_MERGE_PATCH(monitored_tokens_refs, '{patch}') WHERE id = :user_id"
+        )
 
         self.tokens.append(token)
+        db.session.execute(add_query, {"user_id": self.id})
+        db.session.execute(remove_query, {"user_id": self.id})
         db.session.commit()
 
     def unlink_token(self, token):
-        if self.archived_tokens_refs is None:
-            self.archived_tokens_refs = []
+        patch = f'{{"{token.key}": "{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}"}}'
+        remove_query = text(
+            f"UPDATE user SET monitored_tokens_refs = JSON_REMOVE(monitored_tokens_refs, '$.{token.key}') WHERE id = :user_id"
+        )
+        add_query = text(
+            f"UPDATE user SET archived_tokens_refs = JSON_MERGE_PATCH(archived_tokens_refs, '{patch}') WHERE id = :user_id"
+        )
 
-        self.archived_tokens_refs.append(token.key)
+        db.session.execute(add_query, {"user_id": self.id})
+        db.session.execute(remove_query, {"user_id": self.id})
         self.tokens.remove(token)
         db.session.commit()
 
@@ -35,16 +51,14 @@ class User(Base):
             'email': self.email
         }
         if include_archived_tokens:
-            archived_refs = self.archived_tokens_refs or []
             serialized_data['archived_tokens_ids'] = {
-                'total_records': len(archived_refs),
-                'data': archived_refs
+                'total_records': len(self.archived_tokens_refs),
+                'data': self.archived_tokens_refs
             }
         if include_active_tokens:
-            tokens_data = [token.serialize() for token in self.tokens]
-            serialized_data['monitored_tokens'] = {
-                'total_records': len(tokens_data),
-                'data': tokens_data
+            serialized_data['monitored_tokens_ids'] = {
+                'total_records': len(self.monitored_tokens_refs),
+                'data': self.monitored_tokens_refs
             }
         return serialized_data
 
