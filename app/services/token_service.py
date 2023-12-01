@@ -1,6 +1,7 @@
 import requests
 from datetime import datetime, timedelta
 from ..models.token import db, Token
+from ..utils.exceptions import *
 
 
 class TokenService:
@@ -98,14 +99,3 @@ class TokenService:
     #     except Exception as e:
     #         print(f"Error updating tokens: {str(e)}")
 
-
-class TokenNotFoundError(Exception):
-    pass
-
-
-class TokenServiceError(Exception):
-    pass
-
-
-class TokenServiceCreateError(Exception):
-    pass

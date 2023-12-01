@@ -1,8 +1,8 @@
 from flask_restx import Namespace, Resource, reqparse, fields, inputs
 from app.models.user import db, User as UserModel
 from sqlalchemy.exc import IntegrityError
-from app.services.user_service import (UserService, TokenNotFoundError, UserNotFoundError, TokenAlreadyAssignedError,
-                                       TokenNotAssignedError)
+from app.services.user_service import UserService
+from app.utils.exceptions import *
 
 ns = Namespace('users', description='User related operations')
 user_service = UserService()

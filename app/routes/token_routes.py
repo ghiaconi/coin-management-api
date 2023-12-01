@@ -1,6 +1,7 @@
 from flask_restx import Namespace, Resource, reqparse, fields, inputs
 from app.models.token import Token as TokenModel
-from app.services.token_service import TokenService, TokenNotFoundError, TokenServiceError
+from app.services.token_service import TokenService
+from app.utils.exceptions import *
 
 ns = Namespace('tokens', description='Token related operations')
 token_service = TokenService()

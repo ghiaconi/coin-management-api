@@ -1,7 +1,8 @@
 import requests
 from ..models.user import db, User
 from ..models.token import Token
-from app.services.token_service import TokenService, TokenNotFoundError, TokenServiceError
+from app.services.token_service import TokenService
+from ..utils.exceptions import *
 
 token_service = TokenService()
 
@@ -44,14 +45,3 @@ class UserService:
 
         user.unlink_token(token)
 
-
-class UserNotFoundError(Exception):
-    pass
-
-
-class TokenAlreadyAssignedError(Exception):
-    pass
-
-
-class TokenNotAssignedError(Exception):
-    pass
