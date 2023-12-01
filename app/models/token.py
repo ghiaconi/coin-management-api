@@ -5,7 +5,7 @@ class Token(Base):
     key = db.Column(db.String(64), unique=True, nullable=False)
     attributes = db.Column(db.JSON)
 
-    def serialize(self, *fields):
+    def serialize(self):
         return {
             'key': self.key,
             'data': self.attributes

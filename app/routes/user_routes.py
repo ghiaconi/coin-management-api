@@ -13,6 +13,12 @@ user_parser.add_argument('username', type=str, help='User username')
 user_parser.add_argument('email', type=str, help='User email')
 user_parser.add_argument('password', type=str, help='User password')
 
+# Token validation parser
+tokens_parser = reqparse.RequestParser()
+tokens_parser.add_argument('include_active_tokens_refs', type=inputs.boolean)
+tokens_parser.add_argument('include_archived_tokens_refs', type=inputs.boolean)
+# Add as separate parser to avoid presence validations with the tokens_parser
+# when the token_id is not used in the endpoint
 token_id_parser = reqparse.RequestParser()
 token_id_parser.add_argument('token_id', type=str, required=True, help='The username of the user')
 
@@ -98,16 +104,14 @@ class User(Resource):
             return {'message': f'Error deleting user {username}', 'error': str(e)}, 500
 
     @ns.doc(description='Get user details by username',
-            params={'include_active_tokens': {'description': 'Include monitored tokens', 'type': 'boolean', 'default': False},
-                    'include_archived_tokens': {'description': 'Include tokens not monitored anymore', 'type': 'boolean', 'default': False}})
+            params={'include_active_tokens_refs': {'description': 'Include monitored tokens', 'type': 'boolean',
+                                                   'default': False},
+                    'include_archived_tokens_refs': {'description': 'Include tokens not monitored anymore',
+                                                     'type': 'boolean', 'default': False}})
     def get(self, username):
-        tokens_parser = reqparse.RequestParser()
-        tokens_parser.add_argument('include_active_tokens', type=inputs.boolean)
-        tokens_parser.add_argument('include_archived_tokens', type=inputs.boolean)
-
         args = tokens_parser.parse_args()
-        active_flag = args.get('include_active_tokens', False)
-        archived_flag = args.get('include_archived_tokens', False)
+        active_flag = args.get('include_active_tokens_refs', False)
+        archived_flag = args.get('include_archived_tokens_refs', False)
         try:
             user = UserModel.query.filter_by(username=username).first()
             if not user:
@@ -117,6 +121,28 @@ class User(Resource):
             return {'message': f'User details for {username}', 'data': user_data}, 200
         except Exception as e:
             return {'message': f'Error retrieving user details for {username}', 'error': str(e)}, 500
+
+
+@ns.route('/<username>/monitored_tokens')
+class GetMonitoredTokens(Resource):
+    @ns.doc(description='Get monitored tokens for user')
+    def get(self, username):
+        try:
+            monitored_tokens = user_service.get_monitored_tokens(username)
+            return {'total_records': len(monitored_tokens), 'data': monitored_tokens}, 200
+        except UserNotFoundError:
+            return {'message': f'User with username {username} not found'}, 404
+
+
+@ns.route('/<username>/archived_tokens')
+class GetArchivedTokens(Resource):
+    @ns.doc(description='Get archived tokens for user')
+    def get(self, username):
+        try:
+            archived_tokens = user_service.get_archived_tokens(username)
+            return {'total_records': len(archived_tokens), 'data': archived_tokens}, 200
+        except UserNotFoundError:
+            return {'message': f'User with username {username} not found'}, 404
 
 
 @ns.route('/<username>/tokens/add')
@@ -135,14 +161,14 @@ class AssignToken(Resource):
             user_service.assign_token_to_user(username, token_id)
             return {'message': f'Token {token_id} successfully added to users {username}\'s list'}, 200
 
-        except (TokenNotFoundError, UserNotFoundError, TokenAlreadyAssignedError) as e:
+        except (TokenNotFoundError, UserNotFoundError) as e:
             return {'message': str(e)}, 404
         except TokenAlreadyAssignedError as e:
             return {'message': str(e)}, 409
 
 
 @ns.route('/<username>/tokens/remove')
-class AssignToken(Resource):
+class RemoveToken(Resource):
     @ns.doc(description='Remove token from the monitored tokens list for user',
             params={'token_id': {'description': 'Monitored token id to remove', 'type': 'string', 'required': True}})
     def delete(self, username):

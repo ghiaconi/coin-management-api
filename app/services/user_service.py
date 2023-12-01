@@ -45,3 +45,21 @@ class UserService:
 
         user.unlink_token(token)
 
+    def get_monitored_tokens(self, username):
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            raise UserNotFoundError(f'User {username} not found')
+
+        tokens = user.tokens
+        return [token.serialize() for token in tokens]
+
+
+    def get_archived_tokens(self, username):
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            raise UserNotFoundError(f'User {username} not found')
+        token_ids = user.archived_tokens_refs.keys()
+        tokens = Token.query.filter(Token.key.in_(token_ids)).all()
+
+        return [token.serialize() for token in tokens]
+
