@@ -24,7 +24,7 @@ class UserService:
 
     def is_token_assigned_to_user(self, username, token_id):
         user = User.query.filter_by(username=username).first()
-        token = Token.query.filter_by(key=token_id).first()
+        token = Token.query.get(token_id)
 
         if not user or not token:
             return False
@@ -36,7 +36,7 @@ class UserService:
         if not user:
             raise UserNotFoundError(f'User {username} not found')
 
-        token = Token.query.filter_by(key=token_id).first()
+        token = Token.query.get(token_id)
         if not token:
             raise TokenNotFoundError(f'Token {token_id} not found')
 
@@ -58,8 +58,11 @@ class UserService:
         user = User.query.filter_by(username=username).first()
         if not user:
             raise UserNotFoundError(f'User {username} not found')
-        token_ids = user.archived_tokens_refs.keys()
-        tokens = Token.query.filter(Token.key.in_(token_ids)).all()
+        archived_ref = user.archived_tokens_refs
+        if archived_ref is None or len(archived_ref) == 0:
+            return []
+        token_ids = archived_ref.keys()
+        tokens = Token.query.filter(Token.id.in_(token_ids)).all()
 
         return [token.serialize() for token in tokens]
 

@@ -12,14 +12,6 @@ token_parser.add_argument('data', type=str, help='Token data')
 query_parser = reqparse.RequestParser()
 query_parser.add_argument('key', type=str, help='Filter tokens by name')
 
-token_model = ns.model('Token', {
-    'id': fields.Integer(description='Token id'),
-    'data': fields.String(description='Token data'),
-    'name': fields.String(description='Token name'),
-    'symbol': fields.String(description='Token symbol'),
-    'price': fields.Float(description='Token price')
-})
-
 
 @ns.route('/')
 class Tokens(Resource):

@@ -13,7 +13,7 @@ class TokenService:
     items_per_page_limit = 250
 
     def get_or_create_token(self, token_key):
-        existing_token = Token.query.filter_by(key=token_key).first()
+        existing_token = Token.query.get(token_key)
         try:
             if not existing_token:
                 data = self.create_token(token_key)
@@ -33,10 +33,7 @@ class TokenService:
         try:
             token_info = self.fetch_tokens_market_data(token_key)[0]
 
-            new_token = Token(
-                key=token_info.get('id', token_key),
-                attributes=token_info
-            )
+            new_token = Token(**token_info)
 
             db.session.add(new_token)
             db.session.commit()
@@ -57,6 +54,8 @@ class TokenService:
             'per_page': self.items_per_page_limit,
             'page': page,
             'sparkline': 'true',
+            'price_change_percentage': '1h,24h,7d',
+            'locale': 'en'
         }
 
         try:

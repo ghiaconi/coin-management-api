@@ -3,6 +3,7 @@ from datetime import datetime
 
 
 class User(Base):
+    id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(60), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     admin = db.Column(db.Boolean, default=False)  # TODO create admin only by verification(invitation only)
@@ -14,9 +15,9 @@ class User(Base):
 
     def assign_token(self, token):
         current_timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        patch = f'{{"{token.key}": "{current_timestamp}"}}'
+        patch = f'{{"{token.id}": "{current_timestamp}"}}'
         remove_query = text(
-            f"UPDATE user SET archived_tokens_refs = JSON_REMOVE(archived_tokens_refs, '$.{token.key}') WHERE id = :user_id"
+            f"UPDATE user SET archived_tokens_refs = JSON_REMOVE(archived_tokens_refs, '$.{token.id}') WHERE id = :user_id"
         )
         add_query = text(
             f"UPDATE user SET monitored_tokens_refs = JSON_MERGE_PATCH(monitored_tokens_refs, '{patch}') WHERE id = :user_id"
@@ -28,9 +29,9 @@ class User(Base):
         db.session.commit()
 
     def unlink_token(self, token):
-        patch = f'{{"{token.key}": "{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}"}}'
+        patch = f'{{"{token.id}": "{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}"}}'
         remove_query = text(
-            f"UPDATE user SET monitored_tokens_refs = JSON_REMOVE(monitored_tokens_refs, '$.{token.key}') WHERE id = :user_id"
+            f"UPDATE user SET monitored_tokens_refs = JSON_REMOVE(monitored_tokens_refs, '$.{token.id}') WHERE id = :user_id"
         )
         add_query = text(
             f"UPDATE user SET archived_tokens_refs = JSON_MERGE_PATCH(archived_tokens_refs, '{patch}') WHERE id = :user_id"

@@ -22,3 +22,7 @@ class Config:
     # CoinGecko API
     COINGECKO_API_URL = 'https://api.coingecko.com/api/v3'
     COINGECKO_API_REFRESH_INTERVAL = 60  # seconds. TODO Figure out a good interval for this
+
+    # Excluded attributes for models that implement the serialize() method
+    TOKEN_EXCLUDED_ATTRIBUTES = ['id', 'created_at', 'updated_at']
+    USER_EXCLUDED_ATTRIBUTES = ['id', 'password', 'created_at', 'updated_at']
