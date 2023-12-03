@@ -2,6 +2,7 @@ import requests
 from datetime import datetime, timedelta, timezone
 from ..models.token import db, Token
 from ..utils.exceptions import *
+from config import Config
 
 
 class TokenService:
@@ -77,27 +78,41 @@ class TokenService:
         except requests.RequestException as e:
             raise TokenServiceError(f'Request error occurred: {str(e)}')
 
-    # def refresh_tokens(self):  # TODO: add to a cron job
-    #     try:
-    #         existing_tokens = Token.query.all()
-    #
-    #         for token in existing_tokens:
-    #             last_update_str = token.attributes['last_updated'] or datetime(1970, 1, 1)
-    #             last_update = datetime.strptime(last_update_str, '%Y-%m-%dT%H:%M:%S.%fZ').replace(tzinfo=timezone.utc)
-    #             current_time = datetime.now(timezone.utc)
-    #             time_since_last_update = current_time - last_update
-    #
-    #             if time_since_last_update > timedelta(hours=24):
-    #                 token_info = self.fetch_tokens_market_data(token.key)
-    #
-    #                 if token_info:
-    #                     token.attributes = token_info['attributes']
-    #                     token.last_update_time = datetime.utcnow()
-    #
-    #         db.session.commit()
-    #     except Exception as e:
-    #         print(f"Error updating tokens: {str(e)}")
-    #
+    def refresh_tokens(self):
+        return [True, datetime.now(timezone.utc)]
+        try:
+            existing_tokens = Token.query.all()
+            token_ids_in_db = [token.id for token in existing_tokens]
+            fresh_data = self.fetch_tokens_market_data(token_ids_in_db)
+            print(f"Coingecko call")
+
+            current_time = None
+            refreshed = False
+
+            for token in existing_tokens:
+                last_update_str = token.last_updated or token.created_at
+                last_update_time = datetime.strptime(last_update_str, '%Y-%m-%dT%H:%M:%S.%fZ').replace(
+                    tzinfo=timezone.utc)
+                current_time = datetime.now(timezone.utc)
+                time_since_last_update = current_time - last_update_time
+
+                if time_since_last_update > timedelta(seconds=Config.COINGECKO_API_REFRESH_INTERVAL):
+                    token_info = next((item for item in fresh_data if item['id'] == token.id), None)
+
+                    if token_info:
+                        refreshed = True
+
+                        for field in Token.__table__.columns:
+                            field_name = field.key
+                            if field_name in token_info:
+                                setattr(token, field_name, token_info[field_name])
+
+            db.session.commit()
+            return [refreshed, current_time.strftime("%Y-%m-%d %H:%M:%S")]
+
+        except Exception as e:
+            raise TokenServiceError(f'Request error occurred: {str(e)}')
+
     # def update_expired_tokens(self):
     #     # Sort tokens based on the oldest last_update_time
     #     sorted_tokens = sorted(token_data.items(), key=lambda x: x[1]['last_update_time'])

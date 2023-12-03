@@ -50,7 +50,13 @@ class UserService:
         if not user:
             raise UserNotFoundError(f'User {username} not found')
 
-        tokens = user.tokens
+        try:
+            token_service.refresh_tokens()
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            pass  # log the error and fail silently
+
+        tokens = sorted(user.tokens, key=lambda token: token.market_cap_rank)
         return [token.serialize() for token in tokens]
 
 

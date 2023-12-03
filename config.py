@@ -20,8 +20,14 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # CoinGecko API
-    COINGECKO_API_URL = 'https://api.coingecko.com/api/v3'
-    COINGECKO_API_REFRESH_INTERVAL = 60  # seconds. TODO Figure out a good interval for this
+    COINGECKO_API_KEY = os.environ.get('COINGECKO_API_KEY')
+    COINGECKO_API_HEADERS = {
+        'accept': 'application/json',
+        'Content-Type': 'application/json',
+        'x-cg-demo-api-key': COINGECKO_API_KEY
+    }
+    COINGECKO_API_URL = f"https://api.coingecko.com/api/v3"
+    COINGECKO_API_REFRESH_INTERVAL = 60  # seconds
 
     # Excluded attributes for models that implement the serialize() method
     TOKEN_EXCLUDED_ATTRIBUTES = ['id', 'created_at', 'updated_at']

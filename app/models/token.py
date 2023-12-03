@@ -36,9 +36,9 @@ class Token(Base):
 
     def serialize(self):
         return {
-            'key': self.id,
+            'id': self.id,
             'data': {
-                'key': self.id,
+                'id': self.id,
                 'symbol': self.symbol,
                 'name': self.name,
                 'image': self.image,
