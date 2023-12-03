@@ -1,4 +1,4 @@
-from flask_restx import Namespace, Resource, reqparse, fields, inputs
+from flask_restx import Namespace, Resource, reqparse, fields
 from app.models.token import Token as TokenModel
 from app.services.token_service import TokenService
 from app.utils.exceptions import *
@@ -11,6 +11,37 @@ token_parser.add_argument('data', type=str, help='Token data')
 
 query_parser = reqparse.RequestParser()
 query_parser.add_argument('key', type=str, help='Filter tokens by name')
+
+# Swagger documentation for the Token model
+token_model = ns.model('Token', {
+    'id': fields.String(description='Token ID'),
+    'name': fields.String(description='Token name'),
+    'symbol': fields.String(description='Token symbol'),
+    'market_cap_rank': fields.Integer(description='Token market cap rank'),
+    'current_price': fields.Float(description='Token current price'),
+    'market_cap': fields.Integer(description='Token market cap'),
+    'total_volume': fields.Integer(description='Token total volume'),
+    'high_24h': fields.Float(description='Token high 24h'),
+    'low_24h': fields.Float(description='Token low 24h'),
+    'price_change_24h': fields.Float(description='Token price change 24h'),
+    'price_change_percentage_24h': fields.Float(description='Token price change percentage 24h'),
+    'market_cap_change_24h': fields.Float(description='Token market cap change 24h'),
+    'market_cap_change_percentage_24h': fields.Float(description='Token market cap change percentage 24h'),
+    'circulating_supply': fields.Integer(description='Token circulating supply'),
+    'total_supply': fields.Integer(description='Token total supply'),
+    'ath': fields.Float(description='Token all time high'),
+    'ath_change_percentage': fields.Float(description='Token all time high change percentage'),
+    'ath_date': fields.DateTime(description='Token all time high date'),
+    'atl': fields.Float(description='Token all time low'),
+    'atl_change_percentage': fields.Float(description='Token all time low change percentage'),
+    'atl_date': fields.DateTime(description='Token all time low date'),
+    'roi': fields.Nested({
+        'times': fields.Float(description='Token ROI times'),
+        'currency': fields.String(description='Token ROI currency'),
+        'percentage': fields.Float(description='Token ROI percentage'),
+    }, description='Token ROI'),
+    'last_updated': fields.DateTime(description='Token last updated'),
+})
 
 
 @ns.route('/')
